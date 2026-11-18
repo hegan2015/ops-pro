@@ -65,6 +65,8 @@ services:
       - "127.0.0.1:10909:10909"
       - "127.0.0.1:10911:10911"
       - "127.0.0.1:10912:10912"
+      # dashboard 共享 broker 网络命名空间，其 web 端口须在 broker 上发布
+      - "127.0.0.1:19876:8080"
     volumes:
       - ./rocketmq/broker.conf:/home/rocketmq/conf/broker.conf:ro
       - claim-shared-rocketmq-broker:/home/rocketmq/store
@@ -74,12 +76,13 @@ services:
   rocketmq-dashboard:
     image: apacherocketmq/rocketmq-dashboard:1.0.0
     container_name: claim-shared-rocketmq-dashboard
+    # 共享 broker 网络命名空间：namesrv 通告的 brokerIP1=127.0.0.1 在此即 broker 回环，
+    # 容器内 dashboard 直连可达，无需改 brokerIP1 或宿主 /etc/hosts（免 sudo）
+    network_mode: "service:rocketmq-broker"
     depends_on:
-      - rocketmq-namesrv
+      - rocketmq-broker
     environment:
       - JAVA_OPTS=-Xms256m -Xmx512m -Drocketmq.namesrv.addr=rocketmq-namesrv:9876
-    ports:
-      - "127.0.0.1:19876:8080"
     restart: unless-stopped
 
   mysql:
