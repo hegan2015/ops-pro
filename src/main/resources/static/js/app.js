@@ -369,7 +369,7 @@ function renderMiddleware(animate) {
 }
 
 /* ---------- 运维工具 ---------- */
-const TOOL_ICON = { "adminer": "i-db", "rocketmq-dashboard": "i-gauge", "xxl-job-admin": "i-clock" };
+const TOOL_ICON = { "adminer": "i-db", "rocketmq-dashboard": "i-gauge", "temporal-ui": "i-flow", "xxl-job-admin": "i-clock" };
 
 function toolCard(t, animate, i) {
   return `<div class="card hoverable svc-card ${animate ? "enter" : ""}" style="${animate ? `animation-delay:${i * 50}ms` : ""}">

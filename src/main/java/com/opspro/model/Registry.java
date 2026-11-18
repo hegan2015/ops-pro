@@ -24,6 +24,8 @@ public final class Registry {
                     "网页版 MySQL 客户端 · 共享实例（ride_* / pp_* / claim / cs_pro）· 独立容器 shared-adminer"),
             new ToolDef("rocketmq-dashboard", "RocketMQ 控制台", 19876, "http://127.0.0.1:19876/",
                     "消息队列可视化运维 · topic / 消费进度 / 集群状态 · 共享 RocketMQ（claim-pro / cs-pro / payment-pro）"),
+            new ToolDef("temporal-ui", "Temporal 控制台", 8088, "http://127.0.0.1:8088/",
+                    "工作流可视化运维 · 理赔案件 workflow 执行历史 / 待人工节点 · claim-pro 长流程编排（Temporal :7233）"),
             new ToolDef("dubbo-admin-payment", "Dubbo Admin（支付）", 8086, "http://127.0.0.1:8086/",
                     "Dubbo 服务控制台 · 注册中心 ZK 2181 · 查提供者/消费者/服务测试"),
             new ToolDef("dubbo-admin-ride", "Dubbo Admin（打车）", 8087, "http://127.0.0.1:8087/",
