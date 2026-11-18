@@ -74,6 +74,7 @@ async function refreshData() {
   if (S.page === "overview") renderOverview(false);
   else if (S.page === "apps") renderApps(false);
   else if (S.page === "middleware") renderMiddleware(false);
+  else if (S.page === "tools") renderTools(false);
   else if (S.page === "audit") renderAuditTable();
 }
 
@@ -220,6 +221,15 @@ function renderOverview(animate) {
         <div class="mono" style="font-size:11px;color:var(--text-3);margin-top:8px">:${a.port} · ${esc(a.label)}</div>
       </a>`).join("")}
     </div>
+    <div class="section-title">${ic("i-layers")}<h2>中间件速览</h2><span class="sub">点击卡片进入共享中间件</span></div>
+    <div class="app-strip">
+      ${S.mw.map((m, i) => `<a href="#/middleware" class="card hoverable ${enter}" style="padding:14px 16px;display:block;${delay(i)}">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <strong style="font-size:13px">${esc(m.label)}</strong></div>
+        ${badge(m.status)}
+        <div class="mono" style="font-size:11px;color:var(--text-3);margin-top:8px">:${m.port} · ${esc(m.name)}</div>
+      </a>`).join("")}
+    </div>
     <div class="section-title">${ic("i-bolt")}<h2>运维工具</h2><span class="sub">新标签页打开</span></div>
     <div class="app-strip">
       ${S.tools.map((t, i) => `<a href="${esc(t.url)}" target="_blank" rel="noopener" class="card hoverable ${enter}" style="padding:14px 16px;display:block;${delay(i)}">
@@ -356,6 +366,35 @@ function renderMiddleware(animate) {
       <button class="btn btn-ghost btn-sm" data-act="refresh">${ic("i-refresh")}立即刷新</button>
     </div>
     <div class="grid-3">${S.mw.map((m, i) => mwCard(m, animate, i)).join("")}</div>`;
+}
+
+/* ---------- 运维工具 ---------- */
+const TOOL_ICON = { "adminer": "i-db", "rocketmq-dashboard": "i-gauge" };
+
+function toolCard(t, animate, i) {
+  return `<div class="card hoverable svc-card ${animate ? "enter" : ""}" style="${animate ? `animation-delay:${i * 50}ms` : ""}">
+    <div class="svc-head">
+      <div class="svc-icon" style="color:var(--cyan);border-color:rgba(34,211,238,.27);background:rgba(34,211,238,.08)">${ic(TOOL_ICON[t.name] || "i-bolt")}</div>
+      <div class="svc-title"><strong>${esc(t.label)}</strong><span>:${t.port}</span></div>
+      ${badge(t.status)}
+    </div>
+    <div class="svc-desc">${esc(t.desc)}</div>
+    <div class="endpoint-row">
+      <span class="endpoint">${esc(t.url)}</span>
+      <button class="icon-btn" data-copy="${esc(t.url)}" title="复制地址">${ic("i-copy")}</button>
+      <a class="link-btn" href="${esc(t.url)}" target="_blank" rel="noopener">${ic("i-external")}打开</a>
+    </div>
+  </div>`;
+}
+
+function renderTools(animate) {
+  $("#content").innerHTML = `
+    <div class="toolbar">
+      <span style="font-size:12.5px;color:var(--text-2)">独立部署的网页版运维工具，端口探活显示状态，点击「打开」在新标签页访问。</span>
+      <span class="spacer"></span>
+      <button class="btn btn-ghost btn-sm" data-act="refresh">${ic("i-refresh")}立即刷新</button>
+    </div>
+    <div class="grid-3">${S.tools.map((t, i) => toolCard(t, animate, i)).join("")}</div>`;
 }
 
 /* ---------- 日志中心 ---------- */
@@ -632,6 +671,7 @@ const PAGES = {
   overview: { title: "总览", sub: "系统健康 · 共享拓扑 · 实时动态" },
   apps: { title: "应用管理", sub: "五个业务应用 · 脚本启停 · 端口探测" },
   middleware: { title: "共享中间件", sub: "Docker Compose 统一管理 · claim-shared 数据卷" },
+  tools: { title: "运维工具", sub: "网页版运维工具入口 · 端口探活 · 新标签页打开" },
   logs: { title: "日志中心", sub: "尾部读取 · SSE 实时追踪 · 关键字过滤" },
   audit: { title: "操作审计", sub: "全部启停操作留痕 · 持久化保存" }
 };
@@ -647,6 +687,7 @@ function route() {
   if (S.page === "overview") renderOverview(true);
   else if (S.page === "apps") renderApps(true);
   else if (S.page === "middleware") renderMiddleware(true);
+  else if (S.page === "tools") renderTools(true);
   else if (S.page === "logs") { refreshSources().then(renderLogs); }
   else if (S.page === "audit") renderAudit();
   window.scrollTo(0, 0);
