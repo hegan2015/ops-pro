@@ -21,7 +21,9 @@ public final class Registry {
 
     public static final List<ToolDef> TOOLS = List.of(
             new ToolDef("adminer", "Adminer 数据库管理", 8089, "http://127.0.0.1:8089/",
-                    "网页版 MySQL 客户端 · 共享实例（ride_* / pp_* / claim / cs_pro）· 独立容器 shared-adminer")
+                    "网页版 MySQL 客户端 · 共享实例（ride_* / pp_* / claim / cs_pro）· 独立容器 shared-adminer"),
+            new ToolDef("rocketmq-dashboard", "RocketMQ 控制台", 19876, "http://127.0.0.1:19876/",
+                    "消息队列可视化运维 · topic / 消费进度 / 集群状态 · 共享 RocketMQ（claim-pro / cs-pro / payment-pro）")
     );
 
     public static final List<AppDef> APPS = List.of(
