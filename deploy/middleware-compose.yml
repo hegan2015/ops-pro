@@ -91,6 +91,8 @@ services:
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
+      - --log-bin-trust-function-creators=1
+      - --max-connections=400
     ports:
       - "127.0.0.1:3306:3306"
     volumes:
@@ -121,6 +123,30 @@ services:
       - claim-shared-minio:/data
     restart: unless-stopped
 
+  zookeeper:
+    image: zookeeper:3.9
+    container_name: claim-shared-zookeeper
+    environment:
+      - ZOO_4LW_COMMANDS_WHITELIST=ruok,stat,mntr,conf
+      - ZOO_ADMINSERVER_ENABLED=false
+    ports:
+      - "127.0.0.1:2181:2181"
+    volumes:
+      - claim-shared-zookeeper:/data
+    restart: unless-stopped
+
+  zookeeper-ride:
+    image: zookeeper:3.9
+    container_name: claim-shared-zookeeper-ride
+    environment:
+      - ZOO_4LW_COMMANDS_WHITELIST=ruok,stat,mntr,conf
+      - ZOO_ADMINSERVER_ENABLED=false
+    ports:
+      - "127.0.0.1:2182:2181"
+    volumes:
+      - claim-shared-zookeeper-ride:/data
+    restart: unless-stopped
+
 volumes:
   claim-shared-temporal:
     name: claim-shared-temporal
@@ -138,3 +164,7 @@ volumes:
     name: claim-shared-redis
   claim-shared-minio:
     name: claim-shared-minio
+  claim-shared-zookeeper:
+    name: claim-shared-zookeeper
+  claim-shared-zookeeper-ride:
+    name: claim-shared-zookeeper-ride

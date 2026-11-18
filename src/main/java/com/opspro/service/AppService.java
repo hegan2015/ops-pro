@@ -126,7 +126,8 @@ public class AppService {
             StringBuilder detail = new StringBuilder();
             try {
                 if (a.dirPath().resolve(a.stopScript()).toFile().isFile()) {
-                    ProcUtil.ExecResult r = ProcUtil.exec(List.of("bash", a.stopScript()), a.dirPath().toFile(), null, 60);
+                    // 多进程应用（如 ride 10 进程逐个优雅停，每个最长 20s）最坏可超 200s，超时须留足
+                    ProcUtil.ExecResult r = ProcUtil.exec(List.of("bash", a.stopScript()), a.dirPath().toFile(), null, 240);
                     detail.append("停止脚本退出码 ").append(r.code()).append("；");
                 } else {
                     detail.append("停止脚本不存在，直接按端口清理；");
@@ -152,7 +153,7 @@ public class AppService {
         }, "app-stop-" + name);
         worker.setDaemon(true);
         worker.start();
-        return Map.of("ok", true, "message", "停止指令已下发，正在优雅停止（最长约 20 秒），状态将自动刷新");
+        return Map.of("ok", true, "message", "停止指令已下发，正在优雅停止（多进程应用可能需要数分钟），状态将自动刷新");
     }
 
     private AppDef require(String name) {

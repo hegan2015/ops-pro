@@ -109,49 +109,55 @@ function dockerBanner(animate) {
   const enter = animate ? "enter" : "";
   if (d.available) {
     return `<div class="docker-banner ok ${enter}">${ic("i-container")}<div><h3>Docker 环境就绪</h3>
-      <p>${esc(d.message)}。共享中间件由 <code>deploy/middleware-compose.yml</code> 统一定义，数据卷命名 <code>claim-shared-*</code>，claim-pro 与 cs-pro 复用同一套实例。</p></div></div>`;
+      <p>${esc(d.message)}。共享中间件由 <code>deploy/middleware-compose.yml</code> 统一定义，数据卷命名 <code>claim-shared-*</code>，claim / cs / ride / payment 复用同一套实例（yiwu 独立运行）。</p></div></div>`;
   }
   return `<div class="docker-banner ${enter}">${ic("i-alert")}<div><h3>${d.installed ? "Docker 守护进程未运行" : "本机未检测到 Docker —— 中间件启动已禁用"}</h3>
     <p>${esc(d.guidance)}<br>推荐命令：<code>brew install --cask docker</code>　或前往 <a href="https://www.docker.com/products/docker-desktop/" target="_blank" rel="noopener">Docker Desktop 官网下载（Apple Silicon）</a>。应用管理与日志中心不受影响。</p></div></div>`;
 }
 
+function topoApps() {
+  return S.apps.filter(a => S.mw.some(m => (m.usedBy || []).some(u => u === a.name || u.indexOf(a.name + "（") === 0)));
+}
+
+function mwUsers(m) {
+  const out = [];
+  (m.usedBy || []).forEach(u => {
+    const a = S.apps.find(x => u === x.name || u.indexOf(x.name + "（") === 0);
+    if (a) out.push({ app: a, optional: u.indexOf("可选") >= 0 });
+  });
+  return out;
+}
+
 function topoSvg() {
-  const claim = S.apps.find(a => a.name === "claim-pro");
-  const cs = S.apps.find(a => a.name === "cs-pro");
   const stColor = st => st === "RUNNING" ? "#34d399" : st === "NEED_DOCKER" ? "#fbbf24" : st === "STARTING" || st === "STOPPING" ? "#22d3ee" : "#5c6d8f";
-  const apps = [
-    { def: claim, y: 78, color: "#22d3ee", label: "claim-pro", sub: "保险理赔 · 8097" },
-    { def: cs, y: 226, color: "#e879f9", label: "cs-pro", sub: "智能客服 · 8096" }
-  ];
+  const apps = topoApps();
   const mwY = i => 22 + i * 44;
+  const H = Math.max(mwY(S.mw.length - 1) + 34, 120);
+  const slot = H / Math.max(apps.length, 1);
+  const appY = j => Math.round(slot * j + (slot - 48) / 2);
+  const appCy = j => appY(j) + 24;
   let edges = "", nodes = "";
   S.mw.forEach((m, i) => {
     const y = mwY(i), cy = y + 17;
-    const users = m.usedBy || [];
-    const claimUse = users.some(u => u.indexOf("claim-pro") === 0);
-    const csUse = users.some(u => u.indexOf("cs-pro") === 0);
-    const csOptional = users.some(u => u.indexOf("cs-pro") === 0 && u.indexOf("可选") >= 0);
-    if (claimUse) {
-      const live = claim && claim.status === "RUNNING" && m.status === "RUNNING";
-      edges += `<path class="topo-edge ${live ? "live" : ""}" stroke="#22d3ee" d="M190 ${apps[0].y + 24} C 400 ${apps[0].y + 24}, 400 ${cy}, 600 ${cy}"/>`;
-    }
-    if (csUse) {
-      const live = cs && cs.status === "RUNNING" && m.status === "RUNNING";
-      edges += `<path class="topo-edge ${live ? "live" : ""}" stroke="#e879f9" ${csOptional ? 'stroke-dasharray="4 5"' : ""} d="M190 ${apps[1].y + 24} C 400 ${apps[1].y + 24}, 400 ${cy}, 600 ${cy}"/>`;
-    }
+    mwUsers(m).forEach(({ app, optional }) => {
+      const j = apps.indexOf(app);
+      const color = APP_COLOR[app.name] || "#22d3ee";
+      const live = app.status === "RUNNING" && m.status === "RUNNING";
+      edges += `<path class="topo-edge ${live ? "live" : ""}" stroke="${color}" ${optional ? 'stroke-dasharray="4 5"' : ""} d="M190 ${appCy(j)} C 400 ${appCy(j)}, 400 ${cy}, 600 ${cy}"/>`;
+    });
     nodes += `<g class="topo-node"><rect x="600" y="${y}" width="300" height="34" rx="9"/>
       <circle cx="618" cy="${cy}" r="4" fill="${stColor(m.status)}"/>
       <text x="632" y="${cy + 4}">${esc(m.label)}</text>
       <text class="sub" x="888" y="${cy + 4}" text-anchor="end">:${m.port}</text></g>`;
   });
-  apps.forEach(a => {
-    const st = a.def ? a.def.status : "STOPPED";
-    nodes += `<g class="topo-node"><rect x="20" y="${a.y}" width="170" height="48" rx="10" style="stroke:${a.color}55"/>
-      <circle cx="38" cy="${a.y + 24}" r="4.5" fill="${stColor(st)}"/>
-      <text x="52" y="${a.y + 21}" style="font-weight:600">${a.label}</text>
-      <text class="sub" x="52" y="${a.y + 37}">${a.sub} · ${STATUS_TEXT[st] || st}</text></g>`;
+  apps.forEach((a, j) => {
+    const y = appY(j), color = APP_COLOR[a.name] || "#22d3ee";
+    nodes += `<g class="topo-node"><rect x="20" y="${y}" width="170" height="48" rx="10" style="stroke:${color}55"/>
+      <circle cx="38" cy="${y + 24}" r="4.5" fill="${stColor(a.status)}"/>
+      <text x="52" y="${y + 21}" style="font-weight:600">${esc(a.label)}</text>
+      <text class="sub" x="52" y="${y + 37}">:${a.port} · ${STATUS_TEXT[a.status] || a.status}</text></g>`;
   });
-  return `<svg viewBox="0 0 920 330" role="img" aria-label="共享中间件复用拓扑">
+  return `<svg viewBox="0 0 920 ${H + 16}" role="img" aria-label="共享中间件复用拓扑">
     <text class="topo-axis" x="20" y="14">应用</text>
     <text class="topo-axis" x="600" y="14">共享中间件（Docker · claim-shared）</text>
     ${edges}${nodes}</svg>`;
@@ -194,9 +200,9 @@ function renderOverview(animate) {
         <div class="section-title" style="margin:0 0 6px">${ic("i-link")}<h2>共享复用拓扑</h2><span class="sub">同一套中间件 · 只此一份</span></div>
         ${topoSvg()}
         <div class="topo-legend">
-          <span><i style="background:#22d3ee"></i>claim-pro 依赖</span>
-          <span><i style="background:#e879f9"></i>cs-pro 可选复用</span>
+          ${topoApps().map(a => `<span><i style="background:${APP_COLOR[a.name] || "#22d3ee"}"></i>${esc(a.name)} 依赖</span>`).join("")}
           <span><i style="background:#34d399"></i>流动线 = 双方运行中</span>
+          <span><i style="background:transparent;border-top:2px dashed #9aa7bd;height:0"></i>虚线 = 可选复用</span>
         </div>
       </div>
       <div class="card feed-card ${enter}" style="${delay(3)}">
@@ -221,6 +227,19 @@ function renderOverview(animate) {
 const APP_ICON = { "claim-pro": "i-shield", "cs-pro": "i-terminal", "ride-pro": "i-flow", "payment-pro": "i-db", "yiwu-pro": "i-drive" };
 const APP_COLOR = { "claim-pro": "#22d3ee", "cs-pro": "#e879f9", "ride-pro": "#34d399", "payment-pro": "#fbbf24", "yiwu-pro": "#818cf8" };
 
+function appDepChips(name) {
+  const deps = [];
+  S.mw.forEach(m => {
+    const u = (m.usedBy || []).find(x => x === name || x.indexOf(name + "（") === 0);
+    if (u) deps.push({ m, optional: u.indexOf("可选") >= 0 });
+  });
+  if (!deps.length) return `<span class="chip" style="color:var(--text-3);border-color:var(--line);background:var(--elevated)">无外部中间件依赖</span>`;
+  return deps.map(({ m, optional }) => {
+    const dot = m.status === "RUNNING" ? "#34d399" : "#5c6d8f";
+    return `<span class="chip ${optional ? "optional" : ""}" title="${esc(m.label)} :${m.port} · ${STATUS_TEXT[m.status] || m.status}"><i style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${dot};margin-right:5px;vertical-align:middle"></i>${esc(m.label)}${optional ? "（可选）" : ""}</span>`;
+  }).join("");
+}
+
 function appCard(a, animate, i) {
   const color = APP_COLOR[a.name] || "#22d3ee";
   const busy = a.busy;
@@ -242,6 +261,8 @@ function appCard(a, animate, i) {
       <dt>脚本</dt><dd class="mono">${esc(a.startScript)} / ${esc(a.stopScript)}${a.pid ? ` · PID ${a.pid}` : ""}</dd>
       <dt>日志</dt><dd class="mono" title="${esc(a.logDir)}">${esc(a.logDir)}</dd>
     </dl>
+    <div style="margin-top:9px"><div style="font-size:11px;color:var(--text-3);margin-bottom:5px">依赖中间件</div>
+      <div class="chips">${appDepChips(a.name)}</div></div>
     ${a.hint ? `<div class="svc-hint">${ic("i-alert")}<span>${esc(a.hint)}</span></div>` : ""}
     <div class="svc-foot">
       <button class="btn btn-start btn-sm" data-act="app-start" data-name="${esc(a.name)}" ${canStart ? "" : "disabled"} title="${esc(startTitle)}">
@@ -267,11 +288,13 @@ function renderApps(animate) {
 /* ---------- 中间件 ---------- */
 const MW_ICON = {
   "temporal": "i-flow", "rocketmq-namesrv": "i-rocket", "rocketmq-broker": "i-rocket",
-  "rocketmq-dashboard": "i-gauge", "mysql": "i-db", "redis": "i-bolt", "minio": "i-drive"
+  "rocketmq-dashboard": "i-gauge", "mysql": "i-db", "redis": "i-bolt", "minio": "i-drive",
+  "zookeeper": "i-link", "zookeeper-ride": "i-link"
 };
 const MW_COLOR = {
   "temporal": "#818cf8", "rocketmq-namesrv": "#fbbf24", "rocketmq-broker": "#f59e0b",
-  "rocketmq-dashboard": "#e879f9", "mysql": "#3b82f6", "redis": "#f87171", "minio": "#34d399"
+  "rocketmq-dashboard": "#e879f9", "mysql": "#3b82f6", "redis": "#f87171", "minio": "#34d399",
+  "zookeeper": "#fb923c", "zookeeper-ride": "#a3e635"
 };
 
 function mwCard(m, animate, i) {
@@ -576,7 +599,7 @@ async function doAction(act, name) {
       const r = await api("/api/middleware/start-all", "POST");
       toast(r.message, "success");
     } else if (act === "mw-stop-all") {
-      const ok = await confirmDialog("停止全部中间件", "确认停止全部 7 个共享中间件服务？claim-pro 与 cs-pro 的相关功能将受影响。数据卷完整保留，不删除任何数据。", "全部停止");
+      const ok = await confirmDialog("停止全部中间件", `确认停止全部 ${S.mw.length} 个共享中间件服务？依赖它们的应用（claim / cs / ride / payment）相关功能将受影响。数据卷完整保留，不删除任何数据。`, "全部停止");
       if (!ok) return;
       const r = await api("/api/middleware/stop-all", "POST");
       toast(r.message, "success");
