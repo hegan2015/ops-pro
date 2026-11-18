@@ -79,27 +79,47 @@ public class AppService {
         if (ops.containsKey(name)) throw new IllegalStateException("该应用已有操作进行中，请稍候");
         if (ProcUtil.portOpen(a.port())) throw new IllegalStateException("应用已在运行（端口 " + a.port() + " 已监听），无需重复启动");
         Path out = props.procLogDir().resolve(name + ".out");
+        List<String> cmd = new ArrayList<>(List.of("bash", a.startScript()));
+        // 内嵌 ZK 与容器 ZK 端口互斥：对应容器 ZK 在跑时必须走 docker profile
+        for (Registry.MwDef mw : Registry.MIDDLEWARE) {
+            if (mw.name().startsWith("zookeeper") && mw.usedBy().contains(a.name()) && ProcUtil.portOpen(mw.port())) {
+                cmd.add("--docker");
+                break;
+            }
+        }
         Process p;
         try {
-            p = ProcUtil.startDetached(List.of("bash", a.startScript()), a.dirPath().toFile(), null, out);
+            p = ProcUtil.startDetached(cmd, a.dirPath().toFile(), null, out);
         } catch (Exception e) {
             state.audit(name, "启动", "失败", "进程创建失败: " + e.getMessage());
             throw new IllegalStateException("启动进程创建失败: " + e.getMessage());
         }
         ops.put(name, new Op("start", System.currentTimeMillis(), p.pid()));
         lastPids.put(name, p.pid());
-        state.audit(name, "启动", "已下发", "执行 bash " + a.startScript() + "，输出重定向 data/proc/" + name + ".out");
+        state.audit(name, "启动", "已下发", "执行 " + String.join(" ", cmd) + "，输出重定向 data/proc/" + name + ".out");
         Thread watcher = new Thread(() -> {
             String result = "失败";
             String detail;
             try {
-                int code = p.waitFor();
-                boolean up = ProcUtil.portOpen(a.port());
+                // 前台脚本（如 yiwu exec node）永不退出，端口监听即视为成功
+                long deadline = System.currentTimeMillis() + 300_000;
+                boolean up = false;
+                Integer code = null;
+                while (true) {
+                    if (ProcUtil.portOpen(a.port())) { up = true; break; }
+                    if (!p.isAlive()) { code = p.exitValue(); up = ProcUtil.portOpen(a.port()); break; }
+                    if (System.currentTimeMillis() > deadline) break;
+                    Thread.sleep(2000);
+                }
                 if (up) {
                     result = "成功";
-                    detail = "启动脚本退出码 " + code + "，端口 " + a.port() + " 已监听";
-                } else {
+                    detail = code != null
+                            ? "启动脚本退出码 " + code + "，端口 " + a.port() + " 已监听"
+                            : "端口 " + a.port() + " 已监听（脚本前台运行中）";
+                } else if (code != null) {
                     detail = "启动脚本退出码 " + code + "，端口 " + a.port() + " 未监听，详见 data/proc/" + name + ".out";
+                } else {
+                    detail = "等待 300s 端口 " + a.port() + " 仍未监听，详见 data/proc/" + name + ".out";
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -111,7 +131,7 @@ public class AppService {
         }, "app-start-" + name);
         watcher.setDaemon(true);
         watcher.start();
-        return Map.of("ok", true, "message", "启动指令已下发，正在执行 " + a.startScript() + "（含编译，可能需要 1-2 分钟），状态将自动刷新");
+        return Map.of("ok", true, "message", "启动指令已下发，正在执行 " + String.join(" ", cmd) + "（含编译，可能需要 1-2 分钟），状态将自动刷新");
     }
 
     public Map<String, Object> stop(String name) {
