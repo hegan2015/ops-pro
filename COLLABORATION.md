@@ -25,7 +25,7 @@
 | 事件 | 确立的规则 |
 |---|---|
 | compose 拉镜像报 `docker-credential-desktop not found in $PATH` | Docker Desktop CLI 与 credential helper 在 ~/.docker/bin，nohup 启动的 Java 进程 PATH 里没有 → **DockerService.composeEnv() 必须把 docker bin 目录补进子进程 PATH**（2026-11-18 已修复） |
-| minio 镜像五个渠道全失败 | Docker Hub 直连 context deadline exceeded；daocloud denied；1ms.run/rat.dev 无 minio 仓库。属网络限制非代码问题；不阻塞 claim local 模式（LocalFsEvidenceStore）。网络恢复后页面点 minio「启动」即可 |
+| minio 镜像全渠道拉取失败 | 根因是 MinIO 官方 2025 起停止社区版预编译分发（CDN 410/quay 401/daocloud denied/多源 not found），叠加 Docker Hub 直连超时。**用户拍板「MinIO 也要拉下来」→ 终极方案：GitHub 源码多阶段 Docker 构建**（deploy/minio-from-source.Dockerfile，golang 经 daocloud + GOPROXY=goproxy.cn），打标原 tag 与 compose 兼容，S3 读写往返实测全过 |
 | 直接 CLI pull 与 compose pull 报错不同 | 排障先看审计详情里的真实报错，区分凭据问题与网络问题，勿混为一谈 |
 | 本机 shell 默认 PATH 无 docker | 终端手动操作先 `export PATH="$HOME/.docker/bin:$PATH"` |
 
@@ -33,7 +33,7 @@
 
 - API curl 全通：apps / middleware / docker-status / audit / 静态页。
 - 浏览器结构化验收：总览（3/5 应用、6/7 中间件、Docker 就绪）/共享中间件（7 服务卡片+启停按钮）/日志中心（6 日志源+文件列表）/操作审计（14 条持久化）四页渲染正常。
-- 中间件 6/7 RUNNING：temporal(+UI)/rocketmq-namesrv/broker/dashboard/mysql/redis；minio 待网络恢复。
+- 中间件 **7/7 RUNNING**：temporal(+UI)/rocketmq-namesrv/broker/dashboard/mysql/redis/minio；minio 经源码构建补齐（2026-11-18），S3 SigV4 建桶/传/读/删往返实测全过，:9001 控制台正常。
 - cs-pro 会话已在本栈完成 H2→容器 MySQL 合入与双实例验证（跨会话复用实证）。
 
 ## 五、通用协作原则

@@ -27,7 +27,7 @@
 | RocketMQ Dashboard | 19876 | :19876 | 运维可视化 |
 | MySQL 8 | 3306 | — | claim-pro / cs-pro（初始库 claim） |
 | Redis 7 | 6379 | — | claim-pro / cs-pro（可选） |
-| MinIO | 9000 | :9001 | claim-pro 证据影像（镜像拉取受网络限制时暂缺，不阻塞 local 模式） |
+| MinIO | 9000 | :9001 | claim-pro 证据影像（上游已停止预编译分发，镜像由源码构建，见下） |
 
 敏感口令放仓库外：
 
@@ -36,6 +36,18 @@ mkdir -p ~/.config/ops-pro && chmod 700 ~/.config/ops-pro
 cp config/ops.properties.example ~/.config/ops-pro/ops.properties
 chmod 600 ~/.config/ops-pro/ops.properties   # 填 MySQL/MinIO 口令
 ```
+
+### MinIO 镜像：源码构建（上游下架兜底）
+
+MinIO 官方 2025 起停止社区版预编译分发（CDN 410、quay 401、各镜像源下架），现成镜像拉不到。本仓库提供可复现的源码构建配方 `deploy/minio-from-source.Dockerfile`（golang 构建镜像经 daocloud、源码 github.com、Go 模块 goproxy.cn）：
+
+```bash
+export PATH="$HOME/.docker/bin:$PATH"
+cd deploy
+docker build -f minio-from-source.Dockerfile -t minio/minio:RELEASE.2024-06-13T22-53-53Z .
+```
+
+产物与 compose 定义完全兼容，构建后页面点 minio「启动」即可。已验证：S3 SigV4 建桶/传对象/读回/删除往返全过，控制台 :9001 正常。
 
 ## 功能与 API
 
