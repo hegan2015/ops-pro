@@ -27,7 +27,9 @@ public final class Registry {
             new ToolDef("dubbo-admin-payment", "Dubbo Admin（支付）", 8086, "http://127.0.0.1:8086/",
                     "Dubbo 服务控制台 · 注册中心 ZK 2181 · 查提供者/消费者/服务测试"),
             new ToolDef("dubbo-admin-ride", "Dubbo Admin（打车）", 8087, "http://127.0.0.1:8087/",
-                    "Dubbo 服务控制台 · 注册中心 ZK 2182 · 查提供者/消费者/服务测试")
+                    "Dubbo 服务控制台 · 注册中心 ZK 2182 · 查提供者/消费者/服务测试"),
+            new ToolDef("xxl-job-admin", "XXL-Job 调度中心", 8094, "http://127.0.0.1:8094/xxl-job-admin",
+                    "分布式任务调度 · claim-pro 图谱构建/金标回归 · 执行器 claim-pro:9999 · 口令见 ~/.config/ops-pro/ops.properties")
     );
 
     public static final List<AppDef> APPS = List.of(
@@ -70,7 +72,10 @@ public final class Registry {
                     "Dubbo 服务注册发现（payment-pro 由内嵌 ZK 迁此）"),
             new MwDef("zookeeper-ride", "ZooKeeper 注册中心（打车）", 2182, null, "127.0.0.1:2182",
                     List.of("ride-pro"), List.of("zookeeper-ride"),
-                    "Dubbo 服务注册发现（ride-pro docker 模式；默认内嵌 ZK 双模式保留）")
+                    "Dubbo 服务注册发现（ride-pro docker 模式；默认内嵌 ZK 双模式保留）"),
+            new MwDef("xxl-job-admin", "XXL-Job 调度中心", 8094, 8094, "127.0.0.1:8094",
+                    List.of("claim-pro"), List.of("xxl-job-admin"),
+                    "分布式任务调度（图谱构建 02:30 / 金标回归 03:00），调度库 xxl_job，执行器 claim-pro:9999")
     );
 
     public static AppDef app(String name) {

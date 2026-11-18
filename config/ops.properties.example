@@ -1,4 +1,8 @@
 mysql.root.password=REPLACE_WITH_STRONG_PASSWORD
 minio.root.user=minioadmin
 minio.root.password=REPLACE_WITH_STRONG_PASSWORD
+# XXL-Job 调度中心（claim-shared-xxl-job-admin :8094）
+xxljob.db.password=REPLACE_WITH_STRONG_PASSWORD
+xxljob.access.token=REPLACE_WITH_RANDOM_TOKEN
+xxljob.admin.password=REPLACE_WITH_STRONG_PASSWORD
 # docker.bin=/Users/you/.docker/bin/docker

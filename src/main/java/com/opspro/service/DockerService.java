@@ -143,6 +143,8 @@ public class DockerService {
         env.put("MYSQL_ROOT_PASSWORD", props.mysqlPassword());
         env.put("MINIO_ROOT_USER", props.minioUser());
         env.put("MINIO_ROOT_PASSWORD", props.minioPassword());
+        env.put("XXL_JOB_DB_PASSWORD", props.xxljobDbPassword());
+        env.put("XXL_JOB_ACCESS_TOKEN", props.xxljobAccessToken());
         // Docker Desktop 的 CLI 与 credential helper 在 ~/.docker/bin，nohup 启动的进程 PATH 里没有，
         // 不补上会导致 compose 拉镜像时报 docker-credential-desktop not found
         String b = bin();

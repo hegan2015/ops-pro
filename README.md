@@ -30,13 +30,14 @@
 | MinIO | 9000 | :9001 | claim-pro 证据影像（上游已停止预编译分发，镜像由源码构建，见下） |
 | ZooKeeper 3.9 | 2181 | — | payment-pro（Dubbo 注册发现，由内嵌 ZK 迁此） |
 | ZooKeeper 3.9（打车） | 2182 | — | ride-pro（docker 模式 Dubbo 注册发现；默认内嵌 ZK 双模式保留） |
+| XXL-Job 调度中心 2.4.1 | 8094 | :8094/xxl-job-admin | claim-pro（图谱构建 02:30 / 金标回归 03:00，执行器 claim-pro:9999；调度库 xxl_job，DDL 存档 deploy/xxl-job/） |
 
 敏感口令放仓库外：
 
 ```bash
 mkdir -p ~/.config/ops-pro && chmod 700 ~/.config/ops-pro
 cp config/ops.properties.example ~/.config/ops-pro/ops.properties
-chmod 600 ~/.config/ops-pro/ops.properties   # 填 MySQL/MinIO 口令
+chmod 600 ~/.config/ops-pro/ops.properties   # 填 MySQL/MinIO/XXL-Job 口令（xxljob.db.password / xxljob.access.token / xxljob.admin.password）
 ```
 
 payment-pro 按域分库（`pp_*` 9 库）。mysql 卷首次初始化后 initdb.d 不再触发，新环境需显式建库：
@@ -60,7 +61,7 @@ docker build -f minio-from-source.Dockerfile -t minio/minio:RELEASE.2024-06-13T2
 
 ## 功能与 API
 
-- **总览**：应用/中间件运行比、Docker 环境状态、共享复用拓扑、实时操作动态、运维工具入口（Adminer 数据库管理 :8089、RocketMQ 控制台 :19876、Dubbo Admin 支付 :8086 / 打车 :8087，端口探活显示状态，新标签页打开）。Dubbo Admin 为独立容器 dubbo-admin-payment/ride（镜像 dubbo-admin:0.6.0，接 claim-shared_default 网络，分别连 ZK 2181/2182；容器内端口 38080，登录 root/root）。
+- **总览**：应用/中间件运行比、Docker 环境状态、共享复用拓扑、实时操作动态、运维工具入口（Adminer 数据库管理 :8089、RocketMQ 控制台 :19876、Dubbo Admin 支付 :8086 / 打车 :8087、XXL-Job 调度中心 :8094，端口探活显示状态，新标签页打开）。Dubbo Admin 为独立容器 dubbo-admin-payment/ride（镜像 dubbo-admin:0.6.0，接 claim-shared_default 网络，分别连 ZK 2181/2182；容器内端口 38080，登录 root/root）。XXL-Job 登录 admin，口令见 `~/.config/ops-pro/ops.properties` 的 `xxljob.admin.password`（默认口令已改）。
 - **应用管理**：`GET /api/apps`、`POST /api/apps/{name}/start|stop`（按各仓库 run.sh/stop.sh，端口探测判活）。
 - **共享中间件**：`GET /api/middleware`、`POST /api/middleware/start-all|stop-all|{name}/start|stop`、`GET /api/docker-status`。
 - **日志中心**：`GET /api/logs/sources`、`GET /api/logs?source=&file=&tail=`、`GET /api/logs/stream`（SSE 实时尾随）。

@@ -40,6 +40,8 @@ public class OpsProps {
     public String mysqlPassword() { return get("mysql.root.password", "ClaimShared_2026"); }
     public String minioUser() { return get("minio.root.user", "minioadmin"); }
     public String minioPassword() { return get("minio.root.password", "ClaimShared_2026"); }
+    public String xxljobDbPassword() { return get("xxljob.db.password", "ClaimShared_2026"); }
+    public String xxljobAccessToken() { return get("xxljob.access.token", "default_token"); }
 
     public void ensureDirs() throws IOException {
         Files.createDirectories(procLogDir());
