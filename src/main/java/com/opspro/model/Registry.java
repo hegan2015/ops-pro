@@ -17,6 +17,13 @@ public final class Registry {
     public record MwDef(String name, String label, int port, Integer consolePort, String endpoint,
                         List<String> usedBy, List<String> composeServices, String desc) {}
 
+    public record ToolDef(String name, String label, int port, String url, String desc) {}
+
+    public static final List<ToolDef> TOOLS = List.of(
+            new ToolDef("adminer", "Adminer 数据库管理", 8089, "http://127.0.0.1:8089/",
+                    "网页版 MySQL 客户端 · 共享实例（ride_* / pp_* / claim / cs_pro）· 独立容器 shared-adminer")
+    );
+
     public static final List<AppDef> APPS = List.of(
             new AppDef("claim-pro", "保险理赔多智能体", QODER_ROOT.resolve("claim-pro").toString(),
                     "run.sh", "stop.sh", 8097, QODER_ROOT.resolve("claim-pro/logs").toString()),

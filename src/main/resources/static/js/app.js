@@ -13,7 +13,7 @@ const badge = st => `<span class="badge ${st.toLowerCase()}"><i class="dot"></i>
 
 const S = {
   page: "overview",
-  apps: [], mw: [], docker: null, audit: [], sources: [],
+  apps: [], mw: [], docker: null, audit: [], sources: [], tools: [],
   firstRender: true,
   auditQuery: "",
   log: { source: "cs-pro", file: "", tail: 200, filter: "", autoscroll: true, live: false, lines: [], shown: 0 },
@@ -66,10 +66,10 @@ async function copyText(text) {
 
 /* ---------- 数据刷新 ---------- */
 async function refreshData() {
-  const [apps, mw, docker, audit] = await Promise.all([
-    api("/api/apps"), api("/api/middleware"), api("/api/docker-status"), api("/api/audit")
+  const [apps, mw, docker, audit, tools] = await Promise.all([
+    api("/api/apps"), api("/api/middleware"), api("/api/docker-status"), api("/api/audit"), api("/api/tools")
   ]);
-  S.apps = apps; S.mw = mw; S.docker = docker; S.audit = audit;
+  S.apps = apps; S.mw = mw; S.docker = docker; S.audit = audit; S.tools = tools;
   updateChrome();
   if (S.page === "overview") renderOverview(false);
   else if (S.page === "apps") renderApps(false);
@@ -218,6 +218,15 @@ function renderOverview(animate) {
           <strong style="font-size:13px">${esc(a.name)}</strong></div>
         ${badge(a.status)}
         <div class="mono" style="font-size:11px;color:var(--text-3);margin-top:8px">:${a.port} · ${esc(a.label)}</div>
+      </a>`).join("")}
+    </div>
+    <div class="section-title">${ic("i-bolt")}<h2>运维工具</h2><span class="sub">新标签页打开</span></div>
+    <div class="app-strip">
+      ${S.tools.map((t, i) => `<a href="${esc(t.url)}" target="_blank" rel="noopener" class="card hoverable ${enter}" style="padding:14px 16px;display:block;${delay(i)}">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <strong style="font-size:13px">${esc(t.label)}</strong>${ic("i-external")}</div>
+        ${badge(t.status)}
+        <div style="font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.5">${esc(t.desc)}</div>
       </a>`).join("")}
     </div>`;
   $("#content").innerHTML = html;

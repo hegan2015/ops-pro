@@ -60,7 +60,7 @@ docker build -f minio-from-source.Dockerfile -t minio/minio:RELEASE.2024-06-13T2
 
 ## 功能与 API
 
-- **总览**：应用/中间件运行比、Docker 环境状态、共享复用拓扑、实时操作动态。
+- **总览**：应用/中间件运行比、Docker 环境状态、共享复用拓扑、实时操作动态、运维工具入口（Adminer 数据库管理 :8089，独立容器 shared-adminer，端口探活显示状态）。
 - **应用管理**：`GET /api/apps`、`POST /api/apps/{name}/start|stop`（按各仓库 run.sh/stop.sh，端口探测判活）。
 - **共享中间件**：`GET /api/middleware`、`POST /api/middleware/start-all|stop-all|{name}/start|stop`、`GET /api/docker-status`。
 - **日志中心**：`GET /api/logs/sources`、`GET /api/logs?source=&file=&tail=`、`GET /api/logs/stream`（SSE 实时尾随）。

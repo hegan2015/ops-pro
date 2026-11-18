@@ -5,6 +5,7 @@ import com.opspro.service.DockerService;
 import com.opspro.service.LogService;
 import com.opspro.service.MiddlewareService;
 import com.opspro.service.StateStore;
+import com.opspro.service.ToolService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,14 +29,16 @@ public class OpsController {
     private final DockerService docker;
     private final LogService logs;
     private final StateStore state;
+    private final ToolService tools;
 
     public OpsController(AppService apps, MiddlewareService middleware, DockerService docker,
-                         LogService logs, StateStore state) {
+                         LogService logs, StateStore state, ToolService tools) {
         this.apps = apps;
         this.middleware = middleware;
         this.docker = docker;
         this.logs = logs;
         this.state = state;
+        this.tools = tools;
     }
 
     @GetMapping("/apps")
@@ -64,6 +67,9 @@ public class OpsController {
 
     @GetMapping("/docker-status")
     public Object dockerStatus() { return docker.status(); }
+
+    @GetMapping("/tools")
+    public Object tools() { return tools.list(); }
 
     @GetMapping("/logs/sources")
     public Object logSources() { return logs.sources(); }
