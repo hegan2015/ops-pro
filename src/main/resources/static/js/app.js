@@ -273,9 +273,9 @@ function appCard(a, animate, i) {
       ${badge(a.status)}
     </div>
     <dl class="kv">
-      <dt>端点</dt><dd><span class="endpoint-row"><span class="endpoint">${esc(a.endpoint)}</span>
-        <button class="icon-btn" data-copy="${esc(a.endpoint)}" title="复制端点">${ic("i-copy")}</button>
-        ${a.status === "RUNNING" ? `<a class="icon-btn" href="${esc(a.url)}" target="_blank" rel="noopener" title="打开应用">${ic("i-external")}</a>` : ""}</span></dd>
+      <dt>访问</dt><dd><span class="endpoint-row"><span class="endpoint">${esc(a.url)}</span>
+        <button class="icon-btn" data-copy="${esc(a.url)}" title="复制地址">${ic("i-copy")}</button>
+        <a class="icon-btn" href="${esc(a.url)}" target="_blank" rel="noopener" title="打开应用（新标签页）">${ic("i-external")}</a></span></dd>
       <dt>目录</dt><dd class="mono" title="${esc(a.dir)}">${esc(a.dir)}</dd>
       <dt>脚本</dt><dd class="mono">${esc(a.startScript)} / ${esc(a.stopScript)}${a.pid ? ` · PID ${a.pid}` : ""}</dd>
       <dt>日志</dt><dd class="mono" title="${esc(a.logDir)}">${esc(a.logDir)}</dd>
