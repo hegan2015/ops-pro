@@ -1,0 +1,4 @@
+mysql.root.password=REPLACE_WITH_STRONG_PASSWORD
+minio.root.user=minioadmin
+minio.root.password=REPLACE_WITH_STRONG_PASSWORD
+# docker.bin=/Users/you/.docker/bin/docker

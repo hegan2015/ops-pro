@@ -1,0 +1,10 @@
+target/
+logs/
+data/
+run/
+.idea/
+*.iml
+config/ops.properties
+*.pem
+*.tmp
+.DS_Store

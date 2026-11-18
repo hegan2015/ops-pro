@@ -1,0 +1,10 @@
+server:
+  port: 8098
+spring:
+  application:
+    name: ops-pro
+  jackson:
+    time-zone: Asia/Shanghai
+logging:
+  level:
+    root: info

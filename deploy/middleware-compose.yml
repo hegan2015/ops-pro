@@ -1,0 +1,140 @@
+name: claim-shared
+
+services:
+  temporal:
+    image: temporalio/auto-setup:1.24.2
+    container_name: claim-shared-temporal
+    depends_on:
+      - temporal-db
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=temporal-db
+      - SKIP_POSTGRES_DB_CREATION=false
+    ports:
+      - "127.0.0.1:7233:7233"
+    volumes:
+      - claim-shared-temporal:/etc/temporal
+    restart: unless-stopped
+
+  temporal-db:
+    image: postgres:16
+    container_name: claim-shared-temporal-db
+    environment:
+      - POSTGRES_USER=temporal
+      - POSTGRES_PASSWORD=temporal
+    volumes:
+      - claim-shared-temporal-db:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  temporal-ui:
+    image: temporalio/ui:2.26.2
+    container_name: claim-shared-temporal-ui
+    depends_on:
+      - temporal
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://127.0.0.1:8088
+    ports:
+      - "127.0.0.1:8088:8080"
+    restart: unless-stopped
+
+  rocketmq-namesrv:
+    image: apache/rocketmq:5.1.4
+    container_name: claim-shared-rocketmq-namesrv
+    command: sh mqnamesrv
+    environment:
+      - JAVA_OPT_EXT=-Xms512m -Xmx512m -Xmn256m
+    ports:
+      - "127.0.0.1:9876:9876"
+    volumes:
+      - claim-shared-rocketmq-namesrv:/home/rocketmq/logs
+    restart: unless-stopped
+
+  rocketmq-broker:
+    image: apache/rocketmq:5.1.4
+    container_name: claim-shared-rocketmq-broker
+    depends_on:
+      - rocketmq-namesrv
+    command: sh mqbroker -n rocketmq-namesrv:9876 -c /home/rocketmq/conf/broker.conf
+    environment:
+      - JAVA_OPT_EXT=-Xms1g -Xmx1g -Xmn512m
+    ports:
+      - "127.0.0.1:10909:10909"
+      - "127.0.0.1:10911:10911"
+      - "127.0.0.1:10912:10912"
+    volumes:
+      - ./rocketmq/broker.conf:/home/rocketmq/conf/broker.conf:ro
+      - claim-shared-rocketmq-broker:/home/rocketmq/store
+      - claim-shared-rocketmq-broker-logs:/home/rocketmq/logs
+    restart: unless-stopped
+
+  rocketmq-dashboard:
+    image: apacherocketmq/rocketmq-dashboard:1.0.0
+    container_name: claim-shared-rocketmq-dashboard
+    depends_on:
+      - rocketmq-namesrv
+    environment:
+      - JAVA_OPTS=-Xms256m -Xmx512m -Drocketmq.namesrv.addr=rocketmq-namesrv:9876
+    ports:
+      - "127.0.0.1:19876:8080"
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8
+    container_name: claim-shared-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-ClaimShared_2026}
+      - MYSQL_DATABASE=claim
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - claim-shared-mysql:/var/lib/mysql
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    container_name: claim-shared-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - claim-shared-redis:/data
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:RELEASE.2024-06-13T22-53-53Z
+    container_name: claim-shared-minio
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-ClaimShared_2026}
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - claim-shared-minio:/data
+    restart: unless-stopped
+
+volumes:
+  claim-shared-temporal:
+    name: claim-shared-temporal
+  claim-shared-temporal-db:
+    name: claim-shared-temporal-db
+  claim-shared-rocketmq-namesrv:
+    name: claim-shared-rocketmq-namesrv
+  claim-shared-rocketmq-broker:
+    name: claim-shared-rocketmq-broker
+  claim-shared-rocketmq-broker-logs:
+    name: claim-shared-rocketmq-broker-logs
+  claim-shared-mysql:
+    name: claim-shared-mysql
+  claim-shared-redis:
+    name: claim-shared-redis
+  claim-shared-minio:
+    name: claim-shared-minio
