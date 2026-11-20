@@ -1,0 +1,101 @@
+# I-2 Apollo 配置中心 —— payment-pro 共享栈增量片段（wave3-E，只新增容器，不动既有中间件）。
+#
+# 拓扑：复用 claim-shared MySQL（新增 ApolloConfigDB/ApolloPortalDB 两库，additive），
+#       加入 claim-shared_default 网络（容器内以别名 mysql 访问共享 MySQL）。
+# 端口（宿主回环，错开 payment 8080 系/actuator 18081-18092/xxl-job 8094）：
+#   configservice 18070（Apollo Meta Server，payment-pro 各域 apollo.meta 指向它）
+#   adminservice  18071（配置发布 OpenAPI，宿主 curl 直连）
+#   portal        18072（可选 UI，profiles=portal；见下方寻址说明）
+#
+# 初始化（一次性，口令取 ~/.config/payment-pro/docker.env 的 MYSQL_PASSWORD，勿回显）：
+#   docker exec -i claim-shared-mysql mysql -uroot -p"$MYSQL_PASSWORD" < apollo/apolloconfigdb.sql
+#   docker exec -i claim-shared-mysql mysql -uroot -p"$MYSQL_PASSWORD" < apollo/apolloportaldb.sql
+#   # eureka 注册址改为容器 DNS（ServerConfig 覆盖 application.yml 默认 localhost）：
+#   docker exec -i claim-shared-mysql mysql -uroot -p"$MYSQL_PASSWORD" ApolloConfigDB \
+#     -e "UPDATE ServerConfig SET Value='http://pp-apollo-configservice:8080/eureka/' WHERE \`Key\`='eureka.service.url';"
+# 启动（不影响既有容器）：
+#   MYSQL_ROOT_PASSWORD=<同 docker.env> docker compose -f apollo-compose.yml up -d
+# 验证：
+#   curl http://127.0.0.1:18070/services/config   # 应返回 homePageUrl=http://127.0.0.1:18070 的实例
+#
+# macOS 寻址红线（bridge IP 宿主不可路由、宿主不解析 host.docker.internal）：
+#   - configservice 通告 homePageUrl=http://127.0.0.1:18070 —— payment-pro 客户端是宿主 JVM，必须宿主可达；
+#   - adminservice 通告 homePageUrl=http://host.docker.internal:18071 + extra_hosts host-gateway ——
+#     供可选 portal 容器经宿主网关回连发布端口；宿主 curl 直接用 127.0.0.1:18071；
+#   - portal 的 DEV_META 用 host.docker.internal（容器侧可达）；浏览器侧如需直连 meta，
+#     需宿主能解析该域名（本机不解析），故 portal 仅 best-effort，核心动态配置链路不依赖 portal。
+#
+# payment-pro 侧开关（~/.config/payment-pro/docker.env 追加，见 payment-pro/config/apollo.env.example）：
+#   PAYMENT_CONFIG_APOLLO_ENABLED=true
+#   APOLLO_META=http://127.0.0.1:18070
+# 降级红线：Apollo 全停 → 客户端 last-known-good（~/.config/payment-pro/apollo-cache）+ 代码默认值，支付不阻断。
+
+name: pp-apollo
+
+networks:
+  default:
+    external: true
+    name: claim-shared_default
+
+services:
+  apollo-configservice:
+    image: docker.m.daocloud.io/apolloconfig/apollo-configservice:2.2.0
+    container_name: pp-apollo-configservice
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/ApolloConfigDB?characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-ClaimShared_2026}
+      - JAVA_OPTS=-Xms256m -Xmx512m
+      - EUREKA_INSTANCE_HOSTNAME=127.0.0.1
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=false
+      - EUREKA_INSTANCE_HOME_PAGE_URL=http://127.0.0.1:18070
+      - EUREKA_INSTANCE_INSTANCE_ID=pp-apollo-configservice:18070
+    ports:
+      - "127.0.0.1:18070:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  apollo-adminservice:
+    image: docker.m.daocloud.io/apolloconfig/apollo-adminservice:2.2.0
+    container_name: pp-apollo-adminservice
+    depends_on:
+      - apollo-configservice
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/ApolloConfigDB?characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-ClaimShared_2026}
+      - JAVA_OPTS=-Xms256m -Xmx512m
+      # 直连 adminservice OpenAPI 发布（无 portal 上下文）时审计切面会 NPE，关闭审计日志
+      - APOLLO_AUDIT_LOG_ENABLED=false
+      - EUREKA_INSTANCE_HOSTNAME=pp-apollo-adminservice
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=false
+      - EUREKA_INSTANCE_HOME_PAGE_URL=http://host.docker.internal:18071
+      - EUREKA_INSTANCE_INSTANCE_ID=pp-apollo-adminservice:18071
+    ports:
+      - "127.0.0.1:18071:8090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  # 可选 UI：docker compose -f apollo-compose.yml --profile portal up -d apollo-portal
+  # 发布配置可不依赖 portal（adminservice OpenAPI 即可，见 verify-config.py 注释）。
+  apollo-portal:
+    image: docker.m.daocloud.io/apolloconfig/apollo-portal:2.2.0
+    container_name: pp-apollo-portal
+    profiles: ["portal"]
+    depends_on:
+      - apollo-configservice
+      - apollo-adminservice
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/ApolloPortalDB?characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-ClaimShared_2026}
+      - JAVA_OPTS=-Xms256m -Xmx512m
+      - APOLLO_PORTAL_ENVS=dev
+      - DEV_META=http://host.docker.internal:18070
+    ports:
+      - "127.0.0.1:18072:8070"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

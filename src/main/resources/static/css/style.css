@@ -230,7 +230,7 @@ button { font-family: inherit; }
 /* ---------- 拓扑 ---------- */
 .overview-cols { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; align-items: stretch; }
 .topo-card { padding: 18px 20px 10px; }
-.topo-card svg { width: 100%; height: auto; display: block; }
+.topo-card > svg { width: 100%; height: auto; display: block; }
 .topo-legend { display: flex; gap: 18px; padding: 8px 4px 10px; font-size: 11.5px; color: var(--text-3); flex-wrap: wrap; }
 .topo-legend i { display: inline-block; width: 18px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
 .topo-edge { fill: none; stroke-width: 1.6; opacity: .55; }
@@ -460,4 +460,33 @@ table.audit .detail { max-width: 520px; word-break: break-all; font-size: 11.5px
   .stat-grid { grid-template-columns: 1fr; }
   .app-strip { grid-template-columns: 1fr; }
   .brand-text { display: none; }
+}
+
+/* ---------- 可观测中心 ---------- */
+.nav-count.bad { color: var(--red); border-color: rgba(248, 113, 113, .35); }
+.spark { width: 100%; height: 32px; margin-top: 2px; }
+.mon-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 12px; }
+.mon-m { display: flex; flex-direction: column; gap: 2px; }
+.mon-m .k { font-size: 10.5px; color: var(--text-3); }
+.mon-m .v { font-size: 13px; color: var(--text); font-weight: 600; }
+.mon-rules { padding: 14px 18px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px; }
+.mon-rules-head { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.mon-rules-head .ic { width: 16px; height: 16px; color: var(--amber); }
+.mon-rules-head .spacer { flex: 1; }
+.mon-rule { display: flex; align-items: center; gap: 16px; font-size: 12.5px; color: var(--text-2); }
+.mon-rule-en { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; min-width: 130px; }
+.mon-rule-en input { accent-color: var(--cyan); width: 15px; height: 15px; cursor: pointer; }
+.mon-rule-thr { display: inline-flex; align-items: center; gap: 6px; color: var(--text-3); }
+.input-sm { padding: 4px 8px; font-size: 12px; border-radius: 7px; }
+
+/* ---------- 灰度发布 ---------- */
+.rel-meta { display: flex; flex-direction: column; gap: 6px; }
+.rel-row { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+.rel-row .k { color: var(--text-3); min-width: 64px; flex: none; }
+.rel-row .v { color: var(--text-2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rel-row .v.mono { font-size: 11.5px; }
+.rel-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.rel-note { font-size: 11.5px; color: var(--text-3); line-height: 1.5; }
+@media (max-width: 900px) {
+  .mon-metrics { grid-template-columns: repeat(2, 1fr); }
 }

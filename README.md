@@ -1,6 +1,6 @@
 # ops-pro · 本机运维控制台
 
-五应用（claim/cs/ride/payment/yiwu）+ 共享中间件栈的统一运维入口：**应用启停、Docker 中间件管理、日志中心（SSE 实时）、操作审计**。Java 21 + Spring Boot 3.2 单模块，端口 **8098**。
+六应用（claim/cs/ride/payment/yiwu/quant）+ 共享中间件栈的统一运维入口：**应用启停、Docker 中间件管理、日志中心（SSE 实时）、操作审计**。Java 21 + Spring Boot 3.2 单模块，端口 **8098**。
 
 > 新会话请先读 [COLLABORATION.md](COLLABORATION.md)（用户指导要点、已拍板决策与踩坑规则）。
 
@@ -62,7 +62,7 @@ docker build -f minio-from-source.Dockerfile -t minio/minio:RELEASE.2024-06-13T2
 ## 功能与 API
 
 - **总览**：应用/中间件运行比、Docker 环境状态、共享复用拓扑、实时操作动态、运维工具入口（Adminer 数据库管理 :8089、RocketMQ 控制台 :19876、Dubbo Admin 支付 :8086 / 打车 :8087、XXL-Job 调度中心 :8094，端口探活显示状态，新标签页打开）。Dubbo Admin 为独立容器 dubbo-admin-payment/ride（镜像 dubbo-admin:0.6.0，接 claim-shared_default 网络，分别连 ZK 2181/2182；容器内端口 38080，登录 root/root）。XXL-Job 登录 admin，口令见 `~/.config/ops-pro/ops.properties` 的 `xxljob.admin.password`（默认口令已改）。
-- **应用管理**：`GET /api/apps`、`POST /api/apps/{name}/start|stop`（按各仓库 run.sh/stop.sh，端口探测判活）。启动自动识别模式：应用依赖的容器 ZK 在运行则附加 `--docker`（内嵌 ZK 与容器 ZK 端口互斥）；监视以「端口监听即成功」判定（兼容 yiwu 等 exec 前台脚本，5 分钟上限）。每张应用卡带**访问地址**（claim :8097 / cs :8096 / ride :8090 / payment :8080 / yiwu :8095），一键复制/新标签页打开，停止状态也可点（启动后即达）。
+- **应用管理**：`GET /api/apps`、`POST /api/apps/{name}/start|stop`（按各仓库 run.sh/stop.sh，端口探测判活）。启动自动识别模式：应用依赖的容器 ZK 在运行则附加 `--docker`（内嵌 ZK 与容器 ZK 端口互斥）；监视以「端口监听即成功」判定（兼容 yiwu 等 exec 前台脚本，5 分钟上限）。每张应用卡带**访问地址**（claim :8097 / cs :8096 / ride :8090 / payment :8080 / yiwu :8095 / quant :8102），一键复制/新标签页打开，停止状态也可点（启动后即达）。
 - **共享中间件**：`GET /api/middleware`、`POST /api/middleware/start-all|stop-all|{name}/start|stop`、`GET /api/docker-status`。
 - **日志中心**：`GET /api/logs/sources`、`GET /api/logs?source=&file=&tail=`、`GET /api/logs/stream`（SSE 实时尾随）。
 - **操作审计**：`GET /api/audit`；全部启停操作持久化 data/state.json（上限 500 条），失败带完整报错。
@@ -75,6 +75,6 @@ docker build -f minio-from-source.Dockerfile -t minio/minio:RELEASE.2024-06-13T2
 
 ## 约束
 
-- 端口 8098（与 claim 8097/cs 8096/ride 8090 系/payment 8080 系/yiwu 8095 错开）。
+- 端口 8098（与 claim 8097/cs 8096/ride 8090 系/payment 8080 系/yiwu 8095/quant 8101-8103 错开）。
 - 中间件停止不删数据；删卷/重置须用户明确确认。
 - 密钥一律仓库外 `~/.config/ops-pro/`（700/600），仓库只留 example。

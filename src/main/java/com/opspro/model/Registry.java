@@ -44,7 +44,9 @@ public final class Registry {
             new AppDef("payment-pro", "支付平台", QODER_ROOT.resolve("payment-pro").toString(),
                     "run.sh", "stop.sh", 8080, QODER_ROOT.resolve("payment-pro/logs").toString()),
             new AppDef("yiwu-pro", "义乌商城", QODER_ROOT.resolve("yiwu-pro").toString(),
-                    "start.sh", "stop.sh", 8095, QODER_ROOT.resolve("yiwu-pro/logs").toString())
+                    "start.sh", "stop.sh", 8095, QODER_ROOT.resolve("yiwu-pro/logs").toString()),
+            new AppDef("quant-pro", "智能量化系统", QODER_ROOT.resolve("quant-pro").toString(),
+                    "run.sh", "stop.sh", 8102, QODER_ROOT.resolve("quant-pro/logs").toString())
     );
 
     public static final List<MwDef> MIDDLEWARE = List.of(

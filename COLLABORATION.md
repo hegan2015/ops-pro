@@ -17,7 +17,8 @@
 1. **权威定义唯一**：中间件以本仓库 `deploy/middleware-compose.yml` 为准（项目名 claim-shared）；claim-pro 内的 compose 只是同定义备用版。cs-pro 会话也在此栈上操作，改动前先查现状。
 2. **密钥出仓库**：MySQL/MinIO/XXL-Job 口令放 `~/.config/ops-pro/ops.properties`（700/600），仓库只留 example；compose 经环境变量注入，不落命令行明文。
 3. **审计持久化**：所有启停操作写 data/state.json（上限 500 条），重启不丢；失败带完整报错详情。
-4. **应用注册表**：claim/cs/ride/payment/yiwu 五应用按各自仓库 run.sh/stop.sh 启停，端口探测判活，不侵入应用代码。
+4. **应用注册表**：claim/cs/ride/payment/yiwu/quant 六应用按各自仓库 run.sh/stop.sh 启停，端口探测判活，不侵入应用代码。
+   quant-pro（:8102，Python/FastAPI）无外部中间件依赖，行情库为进程内 DuckDB 单文件，总览拓扑以「点线 → 进程内 DuckDB」表示。
 5. **git 听指令**：提交/推送须用户明示；不提交 data/logs/密钥。
 6. **XXL-Job 纳管**（2026-11-18 用户「2 上 XXL-Job」+「也要装上xxb管理放到ops的运维工具里」）：调度中心入 compose（xxl-job-admin :8094）+ Registry 中间件/运维工具双入口；调度库 xxl_job 专用账号 xxljob，admin 默认口令已改；accessToken 与 claim-pro 执行器同值（各自仓库外配置）。
 

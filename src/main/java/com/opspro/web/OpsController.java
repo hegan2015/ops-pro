@@ -4,6 +4,8 @@ import com.opspro.service.AppService;
 import com.opspro.service.DockerService;
 import com.opspro.service.LogService;
 import com.opspro.service.MiddlewareService;
+import com.opspro.service.MonitorService;
+import com.opspro.service.ReleaseService;
 import com.opspro.service.StateStore;
 import com.opspro.service.ToolService;
 import org.springframework.http.HttpStatus;
@@ -13,11 +15,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -30,15 +34,20 @@ public class OpsController {
     private final LogService logs;
     private final StateStore state;
     private final ToolService tools;
+    private final MonitorService monitor;
+    private final ReleaseService release;
 
     public OpsController(AppService apps, MiddlewareService middleware, DockerService docker,
-                         LogService logs, StateStore state, ToolService tools) {
+                         LogService logs, StateStore state, ToolService tools,
+                         MonitorService monitor, ReleaseService release) {
         this.apps = apps;
         this.middleware = middleware;
         this.docker = docker;
         this.logs = logs;
         this.state = state;
         this.tools = tools;
+        this.monitor = monitor;
+        this.release = release;
     }
 
     @GetMapping("/apps")
@@ -89,6 +98,38 @@ public class OpsController {
 
     @GetMapping("/audit")
     public Object audit() { return state.auditList(); }
+
+    @GetMapping("/monitor")
+    public Object monitor() { return monitor.collect(); }
+
+    @GetMapping("/monitor/history")
+    public Object monitorHistory(@RequestParam String target) { return monitor.history(target); }
+
+    @PostMapping("/monitor/rules")
+    public Object monitorRules(@RequestBody List<MonitorService.Rule> rules) { return monitor.setRules(rules); }
+
+    @PostMapping("/monitor/alerts/clear")
+    public Object monitorClearAlerts() { monitor.clearAlerts(); return Map.of("ok", true); }
+
+    @GetMapping("/release")
+    public Object release() { return release.list(); }
+
+    @GetMapping("/release/history")
+    public Object releaseHistory() { return release.history(); }
+
+    @PostMapping("/release/{name}/canary/start")
+    public Object canaryStart(@PathVariable String name, @RequestParam(required = false) String profile) {
+        return release.canaryStart(name, profile);
+    }
+
+    @PostMapping("/release/{name}/canary/stop")
+    public Object canaryStop(@PathVariable String name) { return release.canaryStop(name); }
+
+    @PostMapping("/release/{name}/promote")
+    public Object promote(@PathVariable String name) { return release.promote(name); }
+
+    @PostMapping("/release/{name}/rollback")
+    public Object rollback(@PathVariable String name) { return release.rollback(name); }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> badRequest(IllegalArgumentException e) {
